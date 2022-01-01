@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using System.Text;
 using Microsoft.Extensions.Options;
+using Raytracer.Hittable.Objects;
 using Raytracer.Services;
 
 namespace Raytracer
@@ -70,37 +71,17 @@ namespace Raytracer
 
         private static Vector3 RayColor(Ray ray)
         {
-            var sphereCenter = new Vector3(0.0f, 0.0f, -1f);
-            var root = SphereHit(ray, sphereCenter, 0.5f);
+            var sphere = new Sphere(new Vector3(0, 0, -1), 0.5f);
+            var (hit, hitRecord) = sphere.Hit(ray, -5, 5);
 
-            if (root > 0)
+            if (hit)
             {
-                var normal = Vector3.Normalize(ray.At(root) - sphereCenter);
-                return 0.5f * new Vector3(normal.X + 1, normal.Y + 1, normal.Z + 1);
+                return 0.5f * new Vector3(hitRecord.HitNormal.X + 1, hitRecord.HitNormal.Y + 1, hitRecord.HitNormal.Z + 1);
             }
 
             var amount = MathF.Abs(Vector3.Normalize(ray.Direction).Y);
 
             return Vector3.Lerp(Vector3.One, new Vector3(0.5f, 0.7f, 1f), amount);
-        }
-
-        private static float SphereHit(Ray ray, Vector3 sphereCenter, float radius)
-        {
-            var oc = ray.Origin - sphereCenter;
-            var a = Vector3.Dot(ray.Direction, ray.Direction);
-            var b = 2f * Vector3.Dot(oc, ray.Direction);
-            var c = Vector3.Dot(oc, oc) - radius * radius;
-
-            var delta = b * b - 4f * a * c;
-
-            if (delta < 0f)
-            {
-                return -1f;
-            }
-
-            var root = (-b - MathF.Sqrt(delta)) / (2 * a);
-
-            return root;
         }
     }
 }
