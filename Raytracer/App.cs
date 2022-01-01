@@ -24,21 +24,23 @@ namespace Raytracer
         {
             var sb = new StringBuilder();
 
-            const float focalLenght = 1f;
+            const float focalLength = 1f;
             const float viewportHeight = 2f;
-            var viewportWidth = viewportHeight * (16f / 9f);
-            var origin = Vector3.Zero;
+            const float viewportWidth = viewportHeight * (16f / 9f);
 
-            var downLeftCorner = new Vector3(origin.X - viewportWidth / 2, origin.Y - viewportHeight / 2, -focalLenght);
+            var origin = Vector3.Zero;
+            var horizontal = new Vector3(viewportWidth, 0, 0);
+            var vertical = new Vector3(0, viewportHeight, 0);
+            var downLeftCorner = origin - horizontal / 2 - vertical / 2 - new Vector3(0, 0, focalLength);
 
             for (var i = 0; i < _imageHeight; i++)
             {
                 for (var j = 0; j < _imageWidth; j++)
                 {
-                    var u = (float) i / _imageHeight;
-                    var v = (float) j / _imageWidth;
+                    var v = (float) i / (_imageHeight - 1);
+                    var u = (float) j / (_imageWidth - 1);
 
-                    var ray = new Ray(Vector3.Zero, new Vector3(downLeftCorner.X + v, downLeftCorner.Y + u, downLeftCorner.Z) - origin);
+                    var ray = new Ray(origin, downLeftCorner + horizontal * u + vertical * v - origin);
                     var color = RayColor(ray);
 
                     sb.AppendLine($"{color.X * 255.99f} {color.Y * 255.99f} {color.Z * 255.99f}");
@@ -57,7 +59,7 @@ namespace Raytracer
             await _imageService.WriteImage(image);
         }
 
-        private int GetImageWidth(float imageHeight, string aspectRatio)
+        private static int GetImageWidth(float imageHeight, string aspectRatio)
         {
             var aspectRatioSplitted = aspectRatio.Split(":").Select(float.Parse).ToArray();
             var aspectRatioValue = aspectRatioSplitted[0] / aspectRatioSplitted[1];
@@ -66,11 +68,27 @@ namespace Raytracer
             return (int)imageWidth;
         }
 
-        private Vector3 RayColor(Ray ray)
+        private static Vector3 RayColor(Ray ray)
         {
+            if (SphereHit(ray, new Vector3(0.0f, 0.0f, -1f), 0.5f))
+            {
+                return new Vector3(1f, 0f, 0f);
+            }
+
             var amount = Math.Abs(Vector3.Normalize(ray.Direction).Y);
             
             return Vector3.Lerp(Vector3.One, new Vector3(0.5f, 0.7f, 1f), amount);
+        }
+
+        private static bool SphereHit(Ray ray, Vector3 sphereCenter, float radius)
+        {
+            var oc = ray.Direction - sphereCenter;
+            var a = Vector3.Dot(ray.Direction, ray.Direction);
+            var b = 2f * Vector3.Dot(oc, ray.Direction);
+            var c = Vector3.Dot(oc, oc) - radius * radius;
+            var delta = b * b - 4f * a * c;
+            if (delta > 0) Console.WriteLine(delta);
+            return delta > 0;
         }
     }
 }
