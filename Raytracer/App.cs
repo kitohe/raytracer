@@ -37,8 +37,8 @@ namespace Raytracer
             {
                 for (var j = 0; j < _imageWidth; j++)
                 {
-                    var v = (float) i / (_imageHeight - 1);
-                    var u = (float) j / (_imageWidth - 1);
+                    var v = (float)i / (_imageHeight - 1);
+                    var u = (float)j / (_imageWidth - 1);
 
                     var ray = new Ray(origin, downLeftCorner + horizontal * u + vertical * v - origin);
                     var color = RayColor(ray);
@@ -70,25 +70,37 @@ namespace Raytracer
 
         private static Vector3 RayColor(Ray ray)
         {
-            if (SphereHit(ray, new Vector3(0.0f, 0.0f, -1f), 0.5f))
+            var sphereCenter = new Vector3(0.0f, 0.0f, -1f);
+            var root = SphereHit(ray, sphereCenter, 0.5f);
+
+            if (root > 0)
             {
-                return new Vector3(1f, 0f, 0f);
+                var normal = Vector3.Normalize(ray.At(root) - sphereCenter);
+                return 0.5f * new Vector3(normal.X + 1, normal.Y + 1, normal.Z + 1);
             }
 
-            var amount = Math.Abs(Vector3.Normalize(ray.Direction).Y);
-            
+            var amount = MathF.Abs(Vector3.Normalize(ray.Direction).Y);
+
             return Vector3.Lerp(Vector3.One, new Vector3(0.5f, 0.7f, 1f), amount);
         }
 
-        private static bool SphereHit(Ray ray, Vector3 sphereCenter, float radius)
+        private static float SphereHit(Ray ray, Vector3 sphereCenter, float radius)
         {
-            var oc = ray.Direction - sphereCenter;
+            var oc = ray.Origin - sphereCenter;
             var a = Vector3.Dot(ray.Direction, ray.Direction);
             var b = 2f * Vector3.Dot(oc, ray.Direction);
             var c = Vector3.Dot(oc, oc) - radius * radius;
+
             var delta = b * b - 4f * a * c;
-            if (delta > 0) Console.WriteLine(delta);
-            return delta > 0;
+
+            if (delta < 0f)
+            {
+                return -1f;
+            }
+
+            var root = (-b - MathF.Sqrt(delta)) / (2 * a);
+
+            return root;
         }
     }
 }
